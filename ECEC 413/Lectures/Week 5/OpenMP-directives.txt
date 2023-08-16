@@ -1,0 +1,65 @@
+Here is an example of how a C compiler might transform a
+omp-parallel directive into multithreaded code.
+
+// Original Code                   // Transformed Code
+{                                  {
+   // single threaded code            // single threaded code
+
+   #pragma omp parallel               // create multiple threads using
+   {                                  // the thread function defined below
+      // structured block             _ompc_fork( &_ompregion_fn1, ... );
+   }                                  _ompregion_fn1(...); // master thread
+                                      _ompc_join();
+   // single threaded code            // single threaded code
+}                                  }
+
+                                   // turn the "structured block"
+                                   // into the body of a thread function
+                                   void _ompregion_fn1(...)
+                                   {
+                                      // structured block
+                                   }
+
+===========================================================================
+
+Here is an example of how a C compiler might transform a omp-for worksharing
+directive. Notice that the heart of this transformation is the function
+__ompc_static_init(tid, &lower, &upper, ...) which computes the loop limits
+for each thread (how might you implement this function?). If this worksharing
+directive was in the body of a parallel directive, then this transformed code
+would become the body of the associated thread function.
+
+                             // Transformed Code
+                             int _tid = _ompc_get_thread_num();
+// Original Code             int _lower = 0, _upper = n-1;
+#pragma omp for              _ompc_static_init( _tid, &_lower, &_upper );
+for( i = 0; i < n; i++ )     for( i = _lower; i < _upper; i++ )
+{                            {
+  // loop body                 // loop body
+}                            }
+                             _ompc_barrier();
+
+===========================================================================
+
+Here is an example of how a C compiler might transform a omp-sections
+worksharing directive. Notice that the compiler transforms the sections
+directive into an equivalent omp-for worksharing directive, which would
+then itself be transformed in a manner similar to the above example.
+
+//Original Code                  // Transformed Code
+#pragma omp sections             #pragma omp for schedule(static, 1)
+{                                for( int _tmp = 0; _tmp < 3; _tmp++ )
+   #pragma omp section           {
+   {                                switch(_tmp)
+      // code fragment 1            {
+   }                                case 0:
+   #pragma omp section                 // code fragment 1
+   {                                   break;
+      // code fragment 2            case 1:
+   }                                   // code fragment 2
+   #pragma omp section                 break;
+   {                                case 2:
+      // code fragment 3               // code fragment 3
+   }                                   break;
+}                                   }
+                                 }

@@ -1,0 +1,229 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2639
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fmodern\fcharset0 Courier;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
+{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\deftab720
+\pard\pardeftab720\partightenfactor0
+
+\f0\fs26 \cf0 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 \
+You write C programs in OpenMP by using a combination of\
+   I) compiler directives\
+  II) library functions\
+ III) environment variables.\
+\
+\
+============== I. Compiler Directives ==============\
+\
+There are three important terms that we need to define in order\
+to understand the semantics of OpenMP compiler directives.\
+\
+  i.) Directive - The one line compiler pragma itself.\
+\
+ ii.) Construct - The compiler directive combined with the expression,\
+                  statement, or "structured block" that immediately follows it.\
+                  Notice that this is a lexical (compile time) concept.\
+\
+iii.) Region - This is a dynamic (run time) concept. At run time, the "region"\
+               associated with a construct is all the code encountered during the\
+               execution of the construct. In particular, the body of any function\
+               called from within a construct will be part of the region associated\
+               with that instance of the construct. Notice that different run time\
+               instances of a construct can lead to different regions.\
+\
+\
+====== Parallel directive ======\
+\
+NOTE: This directive creates threads. By default, unless told otherwise\
+by work-sharing directives, every thread does all of the work contained\
+in the "structured block"\
+\
+\
+#pragma omp parallel [optional clauses ...]\
+\{\
+  // a "structured block" with a single entry point\
+  // at the top and a single exit point at the bottom\
+\}\
+\
+\
+====== Work-sharing directives ======\
+\
+NOTE: These directives do not create threads. So they can\
+only lead to parallelized code if they are executed within\
+a "parallel region" (which is not the same thing as being\
+nested inside of a "parallel construct").\
+\
+\
+#pragma omp for [optional clauses ...]\
+<for-loops>\
+\
+#pragma omp sections [optional clauses ...]\
+\{\
+   #pragma omp section\
+   \{\
+      // a "structured block"\
+   \}\
+\
+   #pragma omp section\
+   \{\
+      // a "structured block"\
+   \}\
+\
+   // additional section directives\
+\}\
+\
+#pragma omp single [optional clauses ...]\
+\{\
+   // a "structured block" that is\
+   // executed only by a single thread\
+\}\
+\
+\
+====== Combined parallel work-sharing directives ======\
+\
+NOTE: These two directives both create threads and decide how\
+the work contained in their parallel region will be shared\
+between those threads.\
+\
+\
+#pragma omp parallel for [optional clauses ...]\
+<for-loop>\
+\
+#pragma omp parallel sections [optional clauses ...]\
+\{\
+   #pragma omp section\
+   \{\
+      // a "structured block"\
+   \}\
+\
+   #pragma omp section\
+   \{\
+      // a "structured block"\
+   \}\
+\
+   // additional section directives\
+\}\
+\
+\
+====== Synchronization directives ======\
+\
+#pragma omp barrier\
+\
+#pragma omp critical [(<name>)]\
+\{\
+   // a "structured block"\
+\}\
+\
+#pragma omp atomic\
+<expression-statement>\
+\
+#pragma omp flush [(<list-of-variables>)]\
+\
+#pragma omp master\
+\{\
+   // a "structured block" that is\
+   // executed only by the master thread\
+\}\
+\
+#pragma omp ordered\
+\{\
+   // a "structured block" within\
+   // a for-loop with the ordered clause\
+\}\
+\
+\
+====== Data environment ======\
+\
+#pragma omp threadprivate (<list-of-variables>)\
+\{\
+   // a "structured block"\
+\}\
+\
+\
+=========== Clauses ===========\
+\
+Here is a list of the available clauses that can be used in the above directives.\
+(Not all clauses can be used in every directive.)\
+\
+   default( none | shared )\
+   shared( <list-of-variables> )\
+   private( <list-of-variables> )\
+   firstprivate( <list-of-variables> )\
+   lastprivate( <list-of-variables> )\
+   copyin( <list-of-variables> )\
+   copyprivate( <list-of-variables> )\
+   if( <scalar-expression> )\
+   collapse(n)\
+   ordered\
+   untied\
+   nowait\
+   num_threads( <integer-expression> )\
+   schedule( static | dynamic | guided | runtime [, <chunk_size>] )  // for loop directives\
+   reduction( <operator> : <list-of-variables> )\
+\
+   A reduction clause can use the following operators.\
+   +   *   -   &   |   ^   &&   ||\
+\
+\
+=========== II. Runtime Library functions ===========\
+\
+These functions are declared in the include file <omp.h>.\
+\
+// Execution Environment Functions\
+int  omp_get_num_threads( void )\
+int  omp_get_thread_num( void )\
+int  omp_get_num_procs( void )\
+int  omp_in_parallel( void )\
+// get & set "internal control variables"\
+void omp_set_num_threads( int num_threads )\
+int  omp_get_max_threads( void )\
+void omp_set_dynamic( int dynamic_threads )\
+int  omp_get_dynamic( void )\
+void omp_set_schedule( omp_sched_t  kind, int  modifier )\
+void omp_get_schedule( omp_sched_t *kind, int *modifier )\
+int  omp_get_thread_limit( void )\
+void omp_set_nested( int nested )\
+int  omp_get_nested( void )\
+void omp_set_max_active_levels( int max_active_levels )\
+int  omp_get_max_active_levels( void )\
+// nested parallelism functions (including the previous  4 functions)\
+int  omp_get_level( void )\
+int  omp_get_ancestor_thread_num( int level )\
+int  omp_get_team_size( int level )\
+int  omp_get_active_level( void )\
+\
+// Lock Functions\
+//Simple Lock Functions                      // Nestable Lock Functions\
+void omp_init_lock( omp_lock_t *lock )       void omp_init_nest_lock( omp_nest_lock_t *lock )\
+void omp_destroy_lock( omp_lock_t *lock )    void omp_destroy_nest_lock( omp_nest_lock_t *lock )\
+void omp_set_lock( omp_lock_t *lock )        void omp_set_nest_lock( omp_nest_lock_t *lock )\
+void omp_unset_lock( omp_lock_t *lock )	     void omp_unset_nest_lock( omp_nest_lock_t *lock )\
+int  omp_test_lock( omp_lock_t *lock )	     int  omp_test_nest_lock( omp_nest_lock_t *lock )\
+\
+// Timing Functions\
+double omp_get_wtime( void )\
+double omp_get_wtick( void )\
+\
+\
+============= III. Environment Variables =============\
+\
+Each environment variable sets some "internal control variable" (ICV).\
+Several of these ICV's can also be set (and gotten) by library functions.\
+\
+OMP_NUM_THREADS\
+\
+OMP_DYNAMIC\
+\
+OMP_NESTED\
+\
+OMP_SCHEDULE\
+\
+OMP_THREAD_LIMIT\
+\
+OMP_MAX_ACTIVE_LEVELS\
+\
+OMP_STACKSIZE\
+\
+OMP_WAIT_POLICY\
+}
